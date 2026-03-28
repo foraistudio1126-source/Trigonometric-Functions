@@ -1,0 +1,1334 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>三角関数 単位円</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --sin: #e74c3c;
+  --cos: #3498db;
+  --tan: #27ae60;
+  --angle: #f39c12;
+  --radius: #2c3e50;
+  --bg: #f0f2f5;
+  --surface: #ffffff;
+  --border: #e2e6ea;
+  --text: #2c3e50;
+  --muted: #95a5a6;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  gap: 12px;
+}
+
+.header h1 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  flex: 1;
+}
+
+.seg {
+  display: flex;
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 2px;
+}
+
+.seg-btn {
+  padding: 5px 13px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.seg-btn.on {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+}
+
+/* ── Layout ── */
+.page { display: none; padding: 14px; max-width: 960px; margin: 0 auto; }
+.page.on { display: flex; flex-direction: column; gap: 14px; }
+
+/* Desktop: circle left, info right */
+@media (min-width: 640px) {
+  .explore-inner { flex-direction: row !important; align-items: flex-start; }
+  .circle-wrap { flex: 0 0 auto; }
+  .side-panel { flex: 1; min-width: 0; }
+}
+
+.explore-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Canvas wrap ── */
+.circle-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+canvas { display: block; border-radius: 10px; touch-action: none; }
+
+.angle-badge {
+  display: flex;
+  gap: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-family: Georgia, serif;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.angle-badge span { color: var(--muted); font-size: 12px; font-weight: 400; margin-left: 4px; }
+
+.snap-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ── Side panel ── */
+.side-panel { display: flex; flex-direction: column; gap: 14px; }
+
+/* ── Value card ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.val-row {
+  display: grid;
+  grid-template-columns: 70px 1fr auto;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  gap: 6px;
+}
+.val-row:last-child { border-bottom: none; padding-bottom: 0; }
+.val-row:first-child { padding-top: 0; }
+
+.val-label { font-family: Georgia, serif; font-size: 15px; font-weight: 700; }
+.val-dec { font-size: 13px; color: var(--muted); text-align: right; }
+.val-exact { font-family: Georgia, serif; font-size: 15px; font-weight: 700; text-align: right; min-width: 60px; }
+
+.sin-c { color: var(--sin); }
+.cos-c { color: var(--cos); }
+.tan-c { color: var(--tan); }
+
+/* ── Graph card ── */
+.graph-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+.gtab {
+  padding: 4px 14px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.15s;
+  color: var(--muted);
+}
+.gtab.sin-on { border-color: var(--sin); background: #fef0ef; color: var(--sin); }
+.gtab.cos-on { border-color: var(--cos); background: #eef6fd; color: var(--cos); }
+
+/* ── Memorize page ── */
+.memo-page { align-items: center; }
+
+.q-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 24px;
+  text-align: center;
+  width: 100%;
+  max-width: 480px;
+}
+
+.q-text { font-family: Georgia, serif; font-size: 22px; font-weight: 700; }
+.q-hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+.memo-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  max-width: 480px;
+}
+
+.score { font-size: 13px; color: var(--muted); }
+
+.skip-btn {
+  padding: 5px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: white;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--muted);
+}
+.skip-btn:hover { background: var(--bg); }
+
+/* ── Result toast ── */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 12px 24px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+  font-size: 15px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  white-space: nowrap;
+  z-index: 100;
+  border: 2px solid transparent;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.toast.ok { border-color: var(--tan); color: var(--tan); }
+.toast.ng { border-color: var(--sin); color: var(--sin); }
+
+/* ── Properties Quiz ── */
+.props-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+}
+
+.cat-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #eef6fd;
+  color: var(--cos);
+  letter-spacing: 0.5px;
+  align-self: flex-start;
+}
+
+.props-q-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px 20px 20px;
+  text-align: center;
+  width: 100%;
+  max-width: 520px;
+}
+
+.props-q-text {
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.choices-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  max-width: 520px;
+}
+
+.choice-btn {
+  padding: 14px 10px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: white;
+  cursor: pointer;
+  font-family: Georgia, serif;
+  font-size: 14px;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+  line-height: 1.5;
+  color: var(--text);
+}
+.choice-btn:hover:not(:disabled) { background: var(--bg); }
+.choice-btn:disabled { cursor: default; }
+.choice-btn.ok  { border-color: var(--tan); background: #f0fdf4; color: #1a7a40; font-weight: 700; }
+.choice-btn.ng  { border-color: var(--sin); background: #fff1f1; color: #c0392b; }
+.choice-btn.dim { opacity: 0.35; }
+
+.props-hint {
+  width: 100%;
+  max-width: 520px;
+  font-size: 13px;
+  color: var(--muted);
+  background: var(--bg);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: none;
+  line-height: 1.6;
+}
+.props-hint.show { display: block; }
+.props-hint strong { color: var(--text); }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <h1>三角関数 単位円</h1>
+  <div class="seg">
+    <button class="seg-btn on" id="btnExplore"  onclick="setMode('explore')">探索</button>
+    <button class="seg-btn"    id="btnMemorize" onclick="setMode('memorize')">暗記</button>
+    <button class="seg-btn"    id="btnProps"    onclick="setMode('props')">性質</button>
+  </div>
+  <div class="seg">
+    <button class="seg-btn on" id="btnRad" onclick="setUnit('rad')">rad</button>
+    <button class="seg-btn"    id="btnDeg" onclick="setUnit('deg')">deg</button>
+  </div>
+</header>
+
+<!-- ── Explore Page ── -->
+<div class="page on" id="pageExplore">
+  <div class="explore-inner">
+    <div class="circle-wrap">
+      <canvas id="cCircle"></canvas>
+      <div class="angle-badge">
+        <div>θ&nbsp;=&nbsp;<strong id="angleRad">π/4</strong><span>rad</span></div>
+        <div>θ&nbsp;=&nbsp;<strong id="angleDeg">45°</strong></div>
+      </div>
+      <label class="snap-row">
+        <input type="checkbox" id="snapCk" checked>
+        特殊角スナップ
+      </label>
+    </div>
+    <div class="side-panel">
+      <div class="card">
+        <div class="val-row">
+          <span class="val-label sin-c">sin θ</span>
+          <span class="val-dec" id="sinDec">—</span>
+          <span class="val-exact sin-c" id="sinEx">—</span>
+        </div>
+        <div class="val-row">
+          <span class="val-label cos-c">cos θ</span>
+          <span class="val-dec" id="cosDec">—</span>
+          <span class="val-exact cos-c" id="cosEx">—</span>
+        </div>
+        <div class="val-row">
+          <span class="val-label tan-c">tan θ</span>
+          <span class="val-dec" id="tanDec">—</span>
+          <span class="val-exact tan-c" id="tanEx">—</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="graph-tabs">
+          <button class="gtab sin-on" id="gSin" onclick="setGraph('sin')">sin</button>
+          <button class="gtab"        id="gCos" onclick="setGraph('cos')">cos</button>
+        </div>
+        <canvas id="cGraph" height="130"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Memorize Page ── -->
+<div class="page" id="pageMemorize">
+  <div class="q-card">
+    <div class="q-text" id="qText">θ = π/4</div>
+    <div class="q-hint">正しい三角形をタップ / クリック</div>
+  </div>
+  <div class="memo-meta">
+    <span class="score" id="scoreText">0 / 0</span>
+    <button class="skip-btn" onclick="nextQuestion()">スキップ →</button>
+  </div>
+  <canvas id="cMemo"></canvas>
+</div>
+
+<!-- ── Properties Page ── -->
+<div class="page" id="pageProps">
+  <div class="props-wrap">
+    <div style="display:flex;justify-content:space-between;align-items:center;width:100%;max-width:520px;gap:8px;">
+      <span class="cat-badge" id="propsCat">負角</span>
+      <div class="seg" style="flex-shrink:0;">
+        <button class="seg-btn"    id="pv-tri"  onclick="setPropViz('tri')">三角形</button>
+        <button class="seg-btn"    id="pv-dest" onclick="setPropViz('dest')">移動先</button>
+        <button class="seg-btn on" id="pv-all"  onclick="setPropViz('all')">全て</button>
+        <button class="seg-btn"    id="pv-none" onclick="setPropViz('none')">なし</button>
+      </div>
+    </div>
+    <div class="props-q-card">
+      <div class="props-q-text" id="propsQ">sin(−θ) = ?</div>
+    </div>
+    <canvas id="cProps" style="touch-action:none;border-radius:10px;"></canvas>
+    <div class="choices-grid" id="propsChoices"></div>
+    <div class="props-hint" id="propsHint"></div>
+    <div class="memo-meta" style="max-width:520px;">
+      <span class="score" id="propsScore">0 / 0</span>
+      <button class="skip-btn" onclick="nextProp()">スキップ →</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================
+   STATE
+   ============================================================ */
+const S = {
+  angle:  Math.PI / 4,
+  mode:   'explore',
+  unit:   'rad',
+  graph:  'sin',
+  snap:   true,
+  drag:   false,
+  quiz: {
+    correct: null,
+    choices: [],
+    answered: false,
+    score: { ok: 0, total: 0 }
+  }
+};
+
+/* ============================================================
+   SPECIAL ANGLES
+   ============================================================ */
+const SA = [
+  { r: 0,                  lbl: '0',       sE: '0',      cE: '1',       tE: '0' },
+  { r: Math.PI/6,          lbl: 'π/6',     sE: '1/2',    cE: '√3/2',    tE: '√3/3' },
+  { r: Math.PI/4,          lbl: 'π/4',     sE: '√2/2',   cE: '√2/2',    tE: '1' },
+  { r: Math.PI/3,          lbl: 'π/3',     sE: '√3/2',   cE: '1/2',     tE: '√3' },
+  { r: Math.PI/2,          lbl: 'π/2',     sE: '1',      cE: '0',       tE: '∞' },
+  { r: 2*Math.PI/3,        lbl: '2π/3',    sE: '√3/2',   cE: '-1/2',    tE: '-√3' },
+  { r: 3*Math.PI/4,        lbl: '3π/4',    sE: '√2/2',   cE: '-√2/2',   tE: '-1' },
+  { r: 5*Math.PI/6,        lbl: '5π/6',    sE: '1/2',    cE: '-√3/2',   tE: '-√3/3' },
+  { r: Math.PI,            lbl: 'π',       sE: '0',      cE: '-1',      tE: '0' },
+  { r: 7*Math.PI/6,        lbl: '7π/6',    sE: '-1/2',   cE: '-√3/2',   tE: '√3/3' },
+  { r: 5*Math.PI/4,        lbl: '5π/4',    sE: '-√2/2',  cE: '-√2/2',   tE: '1' },
+  { r: 4*Math.PI/3,        lbl: '4π/3',    sE: '-√3/2',  cE: '-1/2',    tE: '√3' },
+  { r: 3*Math.PI/2,        lbl: '3π/2',    sE: '-1',     cE: '0',       tE: '∞' },
+  { r: 5*Math.PI/3,        lbl: '5π/3',    sE: '-√3/2',  cE: '1/2',     tE: '-√3' },
+  { r: 7*Math.PI/4,        lbl: '7π/4',    sE: '-√2/2',  cE: '√2/2',    tE: '-1' },
+  { r: 11*Math.PI/6,       lbl: '11π/6',   sE: '-1/2',   cE: '√3/2',    tE: '-√3/3' },
+];
+
+const PI2 = 2 * Math.PI;
+const norm = r => ((r % PI2) + PI2) % PI2;
+
+function findSpecial(r) {
+  const n = norm(r);
+  return SA.find(a => Math.abs(n - a.r) < 0.04) || null;
+}
+
+function snapAngle(r) {
+  const n = norm(r);
+  let best = null, bestD = Infinity;
+  for (const a of SA) {
+    const d = Math.abs(n - a.r);
+    if (d < bestD) { bestD = d; best = a; }
+  }
+  return bestD < 0.15 ? best.r : r;
+}
+
+/* ============================================================
+   CANVAS ELEMENTS
+   ============================================================ */
+const CC = document.getElementById('cCircle');
+const CG = document.getElementById('cGraph');
+const CM = document.getElementById('cMemo');
+const ctxC = CC.getContext('2d');
+const ctxG = CG.getContext('2d');
+const ctxM = CM.getContext('2d');
+
+/* ============================================================
+   RESIZE
+   ============================================================ */
+function resize() {
+  // Circle & Memo & Props canvas: square, fill parent width
+  const circleWrap = document.querySelector('.circle-wrap');
+  const memoPage   = document.getElementById('pageMemorize');
+  const propsPage  = document.getElementById('pageProps');
+  const cSize = Math.min(circleWrap ? circleWrap.offsetWidth      : 380, 420);
+  const mSize = Math.min(memoPage   ? memoPage.offsetWidth   - 28 : 380, 420);
+  const pSize = Math.min(propsPage  ? propsPage.offsetWidth  - 28 : 380, 420);
+
+  CC.width = cSize; CC.height = cSize;
+  CM.width = mSize; CM.height = mSize;
+  CP.width = pSize; CP.height = pSize;
+
+  // Graph: fill card width
+  const graphCard = CG.parentElement;
+  CG.width  = graphCard ? graphCard.offsetWidth - 32 : 300;
+  CG.height = 130;
+
+  drawAll();
+}
+
+/* ============================================================
+   DRAW: UNIT CIRCLE
+   ============================================================ */
+function drawCircle(ctx, canvas, angle, opts = {}) {
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+  const R  = Math.min(W, H) * 0.37;
+  const fs = Math.max(9, R * 0.115); // base font size
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, W, H);
+
+  // Quadrant tints
+  const qColors = ['rgba(231,76,60,0.06)', 'rgba(52,152,219,0.06)',
+                   'rgba(39,174,96,0.06)',  'rgba(243,156,18,0.06)'];
+  for (let i = 0; i < 4; i++) {
+    ctx.save();
+    ctx.fillStyle = qColors[i];
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, R + 24, -i*Math.PI/2, -(i+1)*Math.PI/2, true);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // Quadrant ASTC labels
+  const ql = [['全+','#aaa'],['sin+','rgba(231,76,60,0.5)'],
+              ['tan+','rgba(39,174,96,0.5)'],['cos+','rgba(52,152,219,0.5)']];
+  const qd = R * 0.58;
+  const qPos = [[cx+qd, cy-qd],[cx-qd, cy-qd],[cx-qd, cy+qd],[cx+qd, cy+qd]];
+  ctx.font = `bold ${Math.floor(fs*0.9)}px sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ql.forEach(([t,c], i) => { ctx.fillStyle = c; ctx.fillText(t, qPos[i][0], qPos[i][1]); });
+
+  // Grid (r=0.5)
+  ctx.strokeStyle = '#eee'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(cx, cy, R*0.5, 0, PI2); ctx.stroke();
+
+  // Axes
+  ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1.5;
+  line(ctx, cx - R - 22, cy, cx + R + 22, cy);
+  line(ctx, cx, cy - R - 22, cx, cy + R + 22);
+
+  // Arrow heads
+  arrow(ctx, cx + R + 22, cy, '#ccc', 0);
+  arrow(ctx, cx, cy - R - 22, '#ccc', -Math.PI/2);
+
+  // Axis labels
+  ctx.fillStyle = '#aaa'; ctx.font = `${Math.floor(fs*0.85)}px sans-serif`;
+  ctx.textAlign = 'left';  ctx.textBaseline = 'middle';
+  ctx.fillText('cos', cx + R + 26, cy - 2);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  ctx.fillText('sin', cx, cy - R - 26);
+
+  // Tick marks + angle labels at special angles
+  ctx.font = `${Math.floor(fs*0.88)}px Georgia, serif`;
+  for (const a of SA) {
+    const ax = cx + R * Math.cos(a.r);
+    const ay = cy - R * Math.sin(a.r);
+    ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1;
+    const ix = cx + (R-5)*Math.cos(a.r), iy = cy - (R-5)*Math.sin(a.r);
+    const ox = cx + (R+5)*Math.cos(a.r), oy = cy - (R+5)*Math.sin(a.r);
+    line(ctx, ix, iy, ox, oy);
+    const lr = R + 18;
+    ctx.fillStyle = '#bbb';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(a.lbl, cx + lr*Math.cos(a.r), cy - lr*Math.sin(a.r));
+  }
+
+  // Unit circle
+  ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, PI2); ctx.stroke();
+
+  // Current components
+  const cv = Math.cos(angle), sv = Math.sin(angle);
+  const px = cx + R*cv, py = cy - R*sv;
+  const footX = cx + R*cv;
+
+  // Angle arc
+  ctx.strokeStyle = '#f39c12'; ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.arc(cx, cy, R*0.22, 0, angle >= 0 ? -angle : -angle, angle < 0);
+  ctx.stroke();
+  const midA = angle / 2;
+  ctx.fillStyle = '#f39c12';
+  ctx.font = `bold ${Math.floor(fs*1.1)}px Georgia, serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('θ', cx + R*0.32*Math.cos(midA), cy - R*0.32*Math.sin(midA));
+
+  // cos leg (horizontal)
+  ctx.strokeStyle = '#3498db'; ctx.lineWidth = 2.5;
+  ctx.setLineDash([5,4]);
+  line(ctx, cx, cy, footX, cy);
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#3498db';
+  ctx.font = `${Math.floor(fs)}px Georgia, serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = sv >= 0 ? 'top' : 'bottom';
+  ctx.fillText('cos θ', cx + R*cv/2, cy + (sv >= 0 ? 5 : -5));
+
+  // sin leg (vertical)
+  ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 2.5;
+  ctx.setLineDash([5,4]);
+  line(ctx, footX, cy, footX, py);
+  ctx.setLineDash([]);
+  ctx.fillStyle = '#e74c3c';
+  ctx.textAlign = cv >= 0 ? 'left' : 'right';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('sin θ', footX + (cv >= 0 ? 5 : -5), cy - R*sv/2);
+
+  // Right-angle mark
+  if (Math.abs(sv) > 0.08 && Math.abs(cv) > 0.08) {
+    const ms = 7, sx = cv >= 0 ? 1 : -1, sy = sv >= 0 ? -1 : 1;
+    ctx.strokeStyle = '#bbb'; ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(footX - sx*ms, cy);
+    ctx.lineTo(footX - sx*ms, cy + sy*ms);
+    ctx.lineTo(footX,         cy + sy*ms);
+    ctx.stroke();
+  }
+
+  // Tan line (draw when |cos| > 0.1)
+  if (Math.abs(cv) > 0.1) {
+    const tanV  = sv / cv;
+    const tClamp = Math.sign(tanV) * Math.min(Math.abs(tanV), 4);
+    const tx = cx + R;
+    const ty = cy - R * tClamp;
+    // Faint x=1 guideline
+    ctx.strokeStyle = 'rgba(39,174,96,0.2)'; ctx.lineWidth = 1;
+    line(ctx, tx, cy - R*4, tx, cy + R*4);
+    // Extended radius to x=1
+    ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 1.5;
+    ctx.setLineDash([4,4]);
+    line(ctx, px, py, tx, ty);
+    ctx.setLineDash([]);
+    // Tan segment
+    ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 3;
+    line(ctx, tx, cy, tx, ty);
+    // Label
+    ctx.fillStyle = '#27ae60';
+    ctx.font = `${Math.floor(fs)}px Georgia, serif`;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+    if (Math.abs(tClamp) > 0.2)
+      ctx.fillText('tan θ', tx + 5, (cy + ty)/2);
+  }
+
+  // Radius
+  ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 3;
+  line(ctx, cx, cy, px, py);
+
+  // Point
+  ctx.fillStyle = '#2c3e50';
+  ctx.beginPath(); ctx.arc(px, py, 7, 0, PI2); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(px, py, 3.5, 0, PI2); ctx.fill();
+
+  // Coordinate label at point
+  const sp = findSpecial(angle);
+  const n  = norm(angle);
+  const coordLabel = `(${sp ? sp.cE : cv.toFixed(2)}, ${sp ? sp.sE : sv.toFixed(2)})`;
+  const lox = cv >= 0 ? 10 : -10;
+  const loy = sv >= 0 ? -10 : 10;
+  ctx.fillStyle = '#2c3e50';
+  ctx.font = `bold ${Math.floor(fs*0.95)}px Georgia, serif`;
+  ctx.textAlign = cv >= 0 ? 'left' : 'right';
+  ctx.textBaseline = sv >= 0 ? 'bottom' : 'top';
+  ctx.fillText(coordLabel, px + lox, py + loy);
+}
+
+/* ============================================================
+   DRAW: GRAPH
+   ============================================================ */
+function drawGraph(ctx, canvas, angle) {
+  const W = canvas.width, H = canvas.height;
+  const pL=38, pR=14, pT=10, pB=22;
+  const gW = W - pL - pR, gH = H - pT - pB;
+  const midY = pT + gH/2;
+  const fn  = S.graph === 'sin' ? Math.sin : Math.cos;
+  const col = S.graph === 'sin' ? '#e74c3c' : '#3498db';
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#fafafa'; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#fff';    ctx.fillRect(pL, pT, gW, gH);
+
+  // Grid
+  ctx.strokeStyle = '#f0f0f0'; ctx.lineWidth = 1;
+  [-1,-0.5,0.5,1].forEach(v => line(ctx, pL, midY - v*gH/2, pL+gW, midY - v*gH/2));
+  [1,2,3,4].forEach(k => { const x = pL + k*gW/4; line(ctx, x, pT, x, pT+gH); });
+
+  // Axes
+  ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1.5;
+  line(ctx, pL, midY, pL+gW, midY);
+  line(ctx, pL, pT,   pL,    pT+gH);
+
+  // Y labels
+  ctx.fillStyle = '#aaa'; ctx.font = '10px sans-serif';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ctx.fillText('1',  pL-4, pT+2);
+  ctx.fillText('-1', pL-4, pT+gH-2);
+  ctx.fillText('0',  pL-4, midY);
+
+  // X labels (rad): 0, π/2, π, 3π/2, 2π
+  ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
+  ctx.fillText('0', pL + 2, pT + gH + 3);
+  [['π/2', 0.25], ['π', 0.5], ['3π/2', 0.75], ['2π', 1]].forEach(([lbl, frac]) => {
+    ctx.textAlign = frac === 1 ? 'right' : 'center';
+    ctx.fillText(lbl, pL + frac * gW, pT + gH + 3);
+  });
+
+  // Wave
+  ctx.strokeStyle = col; ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (let i = 0; i <= gW; i++) {
+    const t = (i/gW)*PI2;
+    const x = pL + i;
+    const y = midY - fn(t)*gH/2;
+    i === 0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  }
+  ctx.stroke();
+
+  // Current angle marker
+  const na = norm(angle);
+  const mx = pL + (na/PI2)*gW;
+  const mv = fn(angle);
+  const my = midY - mv*gH/2;
+
+  // Vertical line (θ position)
+  ctx.strokeStyle = '#f39c12'; ctx.lineWidth = 1.5;
+  ctx.setLineDash([5,4]);
+  line(ctx, mx, pT, mx, pT+gH);
+  ctx.setLineDash([]);
+
+  // Horizontal projection to y-axis
+  ctx.strokeStyle = col + '66'; ctx.lineWidth = 1;
+  ctx.setLineDash([3,3]);
+  line(ctx, pL, my, mx, my);
+  ctx.setLineDash([]);
+
+  // Dot
+  ctx.fillStyle = col;
+  ctx.beginPath(); ctx.arc(mx, my, 5.5, 0, PI2); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(mx, my, 2.5, 0, PI2); ctx.fill();
+
+  // Value label
+  ctx.fillStyle = col;
+  ctx.font = 'bold 11px sans-serif';
+  ctx.textAlign = mx > pL + gW*0.78 ? 'right' : 'left';
+  ctx.textBaseline = my < midY ? 'bottom' : 'top';
+  ctx.fillText(mv.toFixed(3), mx + (mx > pL+gW*0.78 ? -7 : 7), my + (my < midY ? -4 : 4));
+}
+
+/* ============================================================
+   UPDATE VALUES PANEL
+   ============================================================ */
+function updateValues(angle) {
+  const sv = Math.sin(angle), cv = Math.cos(angle), tv = Math.tan(angle);
+  const sp = findSpecial(angle);
+  const n  = norm(angle);
+
+  document.getElementById('sinDec').textContent = sv.toFixed(4);
+  document.getElementById('cosDec').textContent = cv.toFixed(4);
+  document.getElementById('tanDec').textContent =
+    Math.abs(cv) < 0.01 ? (tv > 0 ? '+∞' : '-∞') : tv.toFixed(4);
+
+  document.getElementById('sinEx').textContent = sp ? sp.sE : '';
+  document.getElementById('cosEx').textContent = sp ? sp.cE : '';
+  document.getElementById('tanEx').textContent = sp ? sp.tE : '';
+
+  // Angle badge
+  const sp2 = findSpecial(angle);
+  const degVal = ((n * 180 / Math.PI)).toFixed(1).replace(/\.0$/, '');
+  document.getElementById('angleRad').textContent = sp2 ? sp2.lbl : n.toFixed(3);
+  document.getElementById('angleDeg').textContent = degVal + '°';
+}
+
+/* ============================================================
+   DRAW ALL
+   ============================================================ */
+function drawAll() {
+  if (S.mode === 'explore') {
+    drawCircle(ctxC, CC, S.angle);
+    drawGraph(ctxG, CG, S.angle);
+    updateValues(S.angle);
+  } else if (S.mode === 'memorize') {
+    drawMemo();
+  } else if (S.mode === 'props') {
+    drawPropViz();
+  }
+}
+
+/* ============================================================
+   MODE / UNIT / GRAPH SWITCHES
+   ============================================================ */
+/* ============================================================
+   PROPERTIES QUIZ — QUESTION BANK
+   ============================================================ */
+// viz(v): t=transform fn, l1/l2=labels, hl=highlight type
+// hl: 'sin'|'cos'|'tan'|'swap'(sin↔cos)|'identity'|null
+const PQ = [
+  // 負角
+  { cat:'負角',     q:'sin(−θ) = ?',           ans:'−sin θ',                    wrong:['sin θ','−cos θ','cos θ'],                               hint:'正弦は<strong>奇関数</strong>（原点対称）。符号が反転する。',             v:{t:a=>-a,            l1:'θ',l2:'−θ',     hl:'sin'}  },
+  { cat:'負角',     q:'cos(−θ) = ?',           ans:'cos θ',                     wrong:['−cos θ','sin θ','−sin θ'],                              hint:'余弦は<strong>偶関数</strong>（y軸対称）。符号は変わらない。',             v:{t:a=>-a,            l1:'θ',l2:'−θ',     hl:'cos'}  },
+  { cat:'負角',     q:'tan(−θ) = ?',           ans:'−tan θ',                    wrong:['tan θ','−sin θ','cos θ'],                               hint:'正接は奇関数。sin/cosのうちsinだけ反転するので符号が変わる。',             v:{t:a=>-a,            l1:'θ',l2:'−θ',     hl:'tan'}  },
+  // 余角 π/2 ± θ
+  { cat:'余角',     q:'sin(π/2 − θ) = ?',      ans:'cos θ',                     wrong:['sin θ','−cos θ','−sin θ'],                              hint:'<strong>sin ↔ cos が入れ替わる</strong>。単位円で90°回した対称性。',    v:{t:a=>Math.PI/2-a,   l1:'θ',l2:'π/2−θ',  hl:'swap'} },
+  { cat:'余角',     q:'cos(π/2 − θ) = ?',      ans:'sin θ',                     wrong:['cos θ','−sin θ','−cos θ'],                              hint:'sin ↔ cos が入れ替わる。sin(π/2−θ) = cos θ と対応。',                v:{t:a=>Math.PI/2-a,   l1:'θ',l2:'π/2−θ',  hl:'swap'} },
+  { cat:'余角',     q:'sin(π/2 + θ) = ?',      ans:'cos θ',                     wrong:['−cos θ','sin θ','−sin θ'],                              hint:'π/2 を超えても sin↔cos 入れ替え。第2象限なのでsinは正。',               v:{t:a=>Math.PI/2+a,   l1:'θ',l2:'π/2+θ',  hl:'swap'} },
+  { cat:'余角',     q:'cos(π/2 + θ) = ?',      ans:'−sin θ',                    wrong:['sin θ','cos θ','−cos θ'],                               hint:'π/2 を超えるとcos は負に。sin↔cos かつ符号反転。',                     v:{t:a=>Math.PI/2+a,   l1:'θ',l2:'π/2+θ',  hl:'swap'} },
+  { cat:'余角',     q:'sin θ = cos( ? )',       ans:'π/2 − θ',                   wrong:['π/2 + θ','π − θ','θ − π/2'],                           hint:'余角の関係：sin θ = cos(π/2 − θ)。差が π/2 になる角。',               v:{t:a=>Math.PI/2-a,   l1:'θ',l2:'π/2−θ',  hl:'swap'} },
+  { cat:'余角',     q:'cos θ = sin( ? )',       ans:'π/2 − θ',                   wrong:['π/2 + θ','π − θ','θ − π/2'],                           hint:'cos θ = sin(π/2 − θ)。sinとcosは π/2 ずれた関係。',                 v:{t:a=>Math.PI/2-a,   l1:'θ',l2:'π/2−θ',  hl:'swap'} },
+  // 補角 π − θ
+  { cat:'補角',     q:'sin(π − θ) = ?',         ans:'sin θ',                     wrong:['−sin θ','cos θ','−cos θ'],                              hint:'第2象限：<strong>sinは正のまま</strong>。sin(π−θ) = sin θ。',          v:{t:a=>Math.PI-a,     l1:'θ',l2:'π−θ',    hl:'sin'}  },
+  { cat:'補角',     q:'cos(π − θ) = ?',         ans:'−cos θ',                    wrong:['cos θ','sin θ','−sin θ'],                               hint:'第2象限：<strong>cosは負に反転</strong>。cos(π−θ) = −cos θ。',         v:{t:a=>Math.PI-a,     l1:'θ',l2:'π−θ',    hl:'cos'}  },
+  { cat:'補角',     q:'tan(π − θ) = ?',         ans:'−tan θ',                    wrong:['tan θ','sin θ','−sin θ'],                               hint:'第2象限：tanは負。sin正・cos負なので tan = sin/cos < 0。',               v:{t:a=>Math.PI-a,     l1:'θ',l2:'π−θ',    hl:'tan'}  },
+  // π + θ
+  { cat:'π + θ',   q:'sin(π + θ) = ?',         ans:'−sin θ',                    wrong:['sin θ','−cos θ','cos θ'],                               hint:'第3象限：<strong>sinは負に反転</strong>。sin(π+θ) = −sin θ。',          v:{t:a=>Math.PI+a,     l1:'θ',l2:'π+θ',    hl:'sin'}  },
+  { cat:'π + θ',   q:'cos(π + θ) = ?',         ans:'−cos θ',                    wrong:['cos θ','−sin θ','sin θ'],                               hint:'第3象限：<strong>cosも負に反転</strong>。cos(π+θ) = −cos θ。',          v:{t:a=>Math.PI+a,     l1:'θ',l2:'π+θ',    hl:'cos'}  },
+  { cat:'π + θ',   q:'tan(π + θ) = ?',         ans:'tan θ',                     wrong:['−tan θ','sin θ','−sin θ'],                              hint:'tan の周期は π。sin・cosともに反転→符号は<strong>そのまま</strong>。',   v:{t:a=>Math.PI+a,     l1:'θ',l2:'π+θ',    hl:'tan'}  },
+  // 3π/2 ± θ
+  { cat:'3π/2±θ', q:'sin(3π/2 − θ) = ?',      ans:'−cos θ',                    wrong:['cos θ','−sin θ','sin θ'],                               hint:'第3象限：sin↔cos 入れ替え＋符号反転。',                                 v:{t:a=>3*Math.PI/2-a, l1:'θ',l2:'3π/2−θ', hl:'swap'} },
+  { cat:'3π/2±θ', q:'cos(3π/2 − θ) = ?',      ans:'−sin θ',                    wrong:['sin θ','−cos θ','cos θ'],                               hint:'第3象限：sin↔cos 入れ替え＋符号反転。',                                 v:{t:a=>3*Math.PI/2-a, l1:'θ',l2:'3π/2−θ', hl:'swap'} },
+  { cat:'3π/2±θ', q:'sin(3π/2 + θ) = ?',      ans:'−cos θ',                    wrong:['cos θ','sin θ','−sin θ'],                               hint:'第4象限：sin↔cos 入れ替え＋符号反転。',                                 v:{t:a=>3*Math.PI/2+a, l1:'θ',l2:'3π/2+θ', hl:'swap'} },
+  { cat:'3π/2±θ', q:'cos(3π/2 + θ) = ?',      ans:'sin θ',                     wrong:['−sin θ','cos θ','−cos θ'],                              hint:'第4象限：sin↔cos 入れ替え。cosは正になる。',                             v:{t:a=>3*Math.PI/2+a, l1:'θ',l2:'3π/2+θ', hl:'swap'} },
+  // 恒等式
+  { cat:'恒等式',   q:'sin²θ + cos²θ = ?',      ans:'1',                         wrong:['0','2','tan²θ'],                                         hint:'ピタゴラスの恒等式。単位円上の点(cosθ, sinθ)の距離が1であることから。',  v:{t:null, l1:'θ',l2:null, hl:'identity'} },
+  { cat:'恒等式',   q:'1 + tan²θ = ?',          ans:'1/cos²θ',                   wrong:['1/sin²θ','sec θ','tan²θ + 1/tan²θ'],                    hint:'sin²+cos²=1 を cos² で割ると導出できる。',                              v:{t:null, l1:'θ',l2:null, hl:'identity'} },
+  // 2倍角
+  { cat:'2倍角',    q:'sin 2θ = ?',             ans:'2 sin θ cos θ',             wrong:['sin²θ − cos²θ','2 cos²θ − 1','cos²θ − sin²θ'],          hint:'加法定理 sin(θ+θ) から。sin α cos β + cos α sin β に θ を代入。',      v:{t:a=>2*a,           l1:'θ',l2:'2θ',     hl:'sin'}  },
+  { cat:'2倍角',    q:'cos 2θ = ?（基本形）',   ans:'cos²θ − sin²θ',             wrong:['2 sin θ cos θ','1 − 2cos²θ','sin²θ − cos²θ'],            hint:'加法定理 cos(θ+θ) から。cos α cos β − sin α sin β に θ を代入。',      v:{t:a=>2*a,           l1:'θ',l2:'2θ',     hl:'cos'}  },
+  { cat:'2倍角',    q:'cos 2θ = ?（sinのみ）', ans:'1 − 2sin²θ',               wrong:['2sin²θ − 1','1 − sin²θ','2 − 2sin²θ'],                   hint:'cos²θ = 1 − sin²θ を基本形に代入すると得られる。',                      v:{t:a=>2*a,           l1:'θ',l2:'2θ',     hl:'cos'}  },
+  { cat:'2倍角',    q:'cos 2θ = ?（cosのみ）', ans:'2cos²θ − 1',               wrong:['1 − 2cos²θ','2 − cos²θ','cos²θ'],                        hint:'sin²θ = 1 − cos²θ を基本形に代入すると得られる。',                      v:{t:a=>2*a,           l1:'θ',l2:'2θ',     hl:'cos'}  },
+  // 加法定理 (viz: 2つの独立した角, 単位円では複雑なので identity扱い)
+  { cat:'加法定理', q:'sin(α + β) = ?',         ans:'sin α cos β + cos α sin β', wrong:['sin α sin β − cos α cos β','cos α cos β − sin α sin β','sin α cos β − cos α sin β'], hint:'加法定理の基本形。「sin cos + cos sin」と覚える。', v:{t:null, l1:'α',l2:'β', hl:null} },
+  { cat:'加法定理', q:'sin(α − β) = ?',         ans:'sin α cos β − cos α sin β', wrong:['sin α cos β + cos α sin β','cos α cos β + sin α sin β','cos α cos β − sin α sin β'], hint:'β → −β と置き換える。sin(−β) = −sin β, cos(−β) = cos β。', v:{t:null, l1:'α',l2:'β', hl:null} },
+  { cat:'加法定理', q:'cos(α + β) = ?',         ans:'cos α cos β − sin α sin β', wrong:['cos α cos β + sin α sin β','sin α cos β + cos α sin β','sin α sin β − cos α cos β'], hint:'加法定理の基本形。「cos cos − sin sin」と覚える。', v:{t:null, l1:'α',l2:'β', hl:null} },
+  { cat:'加法定理',  q:'cos(α − β) = ?',         ans:'cos α cos β + sin α sin β', wrong:['cos α cos β − sin α sin β','sin α cos β − cos α sin β','sin α sin β + cos α cos β'], hint:'β → −β と置き換える。符号が反転することに注意。' },
+];
+
+const PS = { score: { ok: 0, total: 0 }, current: null, answered: false,
+             vizAngle: Math.PI/3, vizMode: 'all', vizDrag: false };
+
+const CP   = document.getElementById('cProps');
+const ctxP = CP.getContext('2d');
+
+/* ============================================================
+   PROP VIZ — DRAWING
+   ============================================================ */
+function drawCircleBase(ctx, cx, cy, R) {
+  ctx.strokeStyle = '#ddd'; ctx.lineWidth = 1.5;
+  line(ctx, cx - R - 16, cy, cx + R + 16, cy);
+  line(ctx, cx, cy - R - 16, cx, cy + R + 16);
+  ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, PI2); ctx.stroke();
+  // Axis labels
+  ctx.fillStyle = '#ccc'; ctx.font = '11px Georgia, serif';
+  ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+  ctx.fillText('cos', cx + R + 16, cy - 2);
+  ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+  ctx.fillText('sin', cx + 2, cy - R - 14);
+}
+
+function drawVizTriangle(ctx, cx, cy, R, angle, color, label) {
+  const cv = Math.cos(angle), sv = Math.sin(angle);
+  const px = cx + R*cv, py = cy - R*sv;
+  // Dashed legs
+  ctx.strokeStyle = color + '88'; ctx.lineWidth = 1.5;
+  ctx.setLineDash([4, 3]);
+  line(ctx, cx, cy, cx + R*cv, cy);          // cos leg
+  line(ctx, cx + R*cv, cy, px, py);          // sin leg
+  ctx.setLineDash([]);
+  // Radius
+  ctx.strokeStyle = color; ctx.lineWidth = 2.5;
+  line(ctx, cx, cy, px, py);
+  // Point
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(px, py, 6, 0, PI2); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(px, py, 2.5, 0, PI2); ctx.fill();
+  // Label
+  if (label) {
+    ctx.fillStyle = color;
+    ctx.font = `bold 13px Georgia, serif`;
+    ctx.textAlign = cv >= 0 ? 'left' : 'right';
+    ctx.textBaseline = sv >= 0 ? 'bottom' : 'top';
+    ctx.fillText(label, px + (cv >= 0 ? 9 : -9), py + (sv >= 0 ? -9 : 9));
+  }
+}
+
+function highlightRelation(ctx, cx, cy, R, θ1, θ2, hl) {
+  const cv1 = Math.cos(θ1), sv1 = Math.sin(θ1);
+  const cv2 = Math.cos(θ2), sv2 = Math.sin(θ2);
+  const fs = Math.max(10, R * 0.11);
+
+  if (hl === 'sin') {
+    // Both sin (vertical) projections in bold red
+    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 4;
+    line(ctx, cx + R*cv1, cy, cx + R*cv1, cy - R*sv1);
+    line(ctx, cx + R*cv2, cy, cx + R*cv2, cy - R*sv2);
+    // "=" or "−" label at bottom
+    const eq = Math.abs(sv1 - sv2) < 0.01 ? '= (等しい)' : '= −(符号反転)';
+    ctx.fillStyle = '#e74c3c'; ctx.font = `bold ${Math.floor(fs)}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('sin ' + eq, cx, cy + R + 6);
+
+  } else if (hl === 'cos') {
+    // Both cos (horizontal) projections in bold blue
+    ctx.strokeStyle = '#3498db'; ctx.lineWidth = 4;
+    line(ctx, cx, cy, cx + R*cv1, cy);
+    line(ctx, cx, cy, cx + R*cv2, cy);
+    const eq = Math.abs(cv1 - cv2) < 0.01 ? '= (等しい)' : '= −(符号反転)';
+    ctx.fillStyle = '#3498db'; ctx.font = `bold ${Math.floor(fs)}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('cos ' + eq, cx, cy + R + 6);
+
+  } else if (hl === 'tan') {
+    // Tan lines (segment on x=1) for both angles
+    const drawTanSeg = (θ, col) => {
+      const cv = Math.cos(θ), sv = Math.sin(θ);
+      if (Math.abs(cv) < 0.08) return;
+      const tanV  = Math.sign(sv/cv) * Math.min(Math.abs(sv/cv), 4);
+      const tx = cx + R, ty = cy - R * tanV;
+      ctx.strokeStyle = col; ctx.lineWidth = 4;
+      line(ctx, tx, cy, tx, ty);
+    };
+    ctx.strokeStyle = '#27ae6044'; ctx.lineWidth = 1;
+    line(ctx, cx + R, cy - R*4, cx + R, cy + R*4);
+    drawTanSeg(θ1, '#27ae60');
+    drawTanSeg(θ2, '#2ecc71');
+    const tv1 = Math.tan(θ1), tv2 = Math.tan(θ2);
+    const eq = Math.abs(tv1 - tv2) < 0.01 ? '= (等しい)' : '= −(符号反転)';
+    ctx.fillStyle = '#27ae60'; ctx.font = `bold ${Math.floor(fs)}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('tan ' + eq, cx, cy + R + 6);
+
+  } else if (hl === 'swap') {
+    // cos of θ1 = sin of θ2 (same purple), sin of θ1 = cos of θ2 (same orange)
+    const purp = '#8e44ad', ora = '#e67e22';
+    // cos of θ1 (horizontal) = sin of θ2 (vertical) → purple
+    ctx.strokeStyle = purp; ctx.lineWidth = 4;
+    line(ctx, cx, cy, cx + R*cv1, cy);            // cos of θ1
+    line(ctx, cx + R*cv2, cy, cx + R*cv2, cy - R*sv2); // sin of θ2
+    // sin of θ1 (vertical) = cos of θ2 (horizontal) → orange
+    ctx.strokeStyle = ora; ctx.lineWidth = 4;
+    line(ctx, cx + R*cv1, cy, cx + R*cv1, cy - R*sv1); // sin of θ1
+    line(ctx, cx, cy, cx + R*cv2, cy);            // cos of θ2
+    ctx.fillStyle = '#555'; ctx.font = `bold ${Math.floor(fs)}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('sin ↔ cos 入れ替わり', cx, cy + R + 6);
+
+  } else if (hl === 'identity') {
+    // Highlight the right triangle sides: label sin²+cos²=1
+    const px = cx + R*cv1, py = cy - R*sv1;
+    ctx.strokeStyle = '#e74c3c'; ctx.lineWidth = 3;
+    line(ctx, cx + R*cv1, cy, px, py);  // sin
+    ctx.strokeStyle = '#3498db'; ctx.lineWidth = 3;
+    line(ctx, cx, cy, cx + R*cv1, cy); // cos
+    ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 3;
+    line(ctx, cx, cy, px, py);          // hyp = 1
+    // Hyp label "1"
+    ctx.fillStyle = '#2c3e50'; ctx.font = `bold ${Math.floor(fs*1.1)}px Georgia, serif`;
+    ctx.textAlign = cv1 >= 0 ? 'right' : 'left';
+    ctx.textBaseline = sv1 >= 0 ? 'top' : 'bottom';
+    ctx.fillText('1', (cx + px)/2 + (cv1 >= 0 ? -4 : 4), (cy + py)/2 + (sv1 >= 0 ? 4 : -4));
+    ctx.fillStyle = '#555'; ctx.font = `bold ${Math.floor(fs)}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('sin²θ + cos²θ = 1', cx, cy + R + 6);
+  }
+}
+
+function drawPropViz() {
+  const viz  = PS.current?.v;
+  const mode = PS.vizMode;
+  const θ    = PS.vizAngle;
+
+  // Hide canvas for 'none' or no transform (加法定理 etc.)
+  const show = mode !== 'none' && viz && (viz.t || viz.hl === 'identity');
+  CP.style.display = show ? 'block' : 'none';
+  if (!show) return;
+
+  const W = CP.width, H = CP.height;
+  const cx = W/2, cy = H/2;
+  const R  = Math.min(W, H) * 0.35;
+
+  ctxP.clearRect(0, 0, W, H);
+  ctxP.fillStyle = '#fff'; ctxP.fillRect(0, 0, W, H);
+
+  drawCircleBase(ctxP, cx, cy, R);
+
+  const θ2 = viz.t ? viz.t(θ) : θ;
+
+  // Draw triangles according to mode
+  const showAll  = mode === 'all';
+  const showDest = mode === 'dest' || showAll;
+  const showTri  = mode === 'tri'  || showDest;
+
+  if (showTri)  drawVizTriangle(ctxP, cx, cy, R, θ,  '#3498db', showAll ? viz.l1 : null);
+  if (showDest && viz.t) drawVizTriangle(ctxP, cx, cy, R, θ2, '#e74c3c', showAll ? viz.l2 : null);
+
+  if (showAll)  highlightRelation(ctxP, cx, cy, R, θ, θ2, viz.hl);
+
+  // Drag hint
+  ctxP.fillStyle = '#ccc'; ctxP.font = '10px sans-serif';
+  ctxP.textAlign = 'right'; ctxP.textBaseline = 'bottom';
+  ctxP.fillText('ドラッグで θ を変更', W - 6, H - 4);
+}
+
+/* ── Drag on props canvas ── */
+function pEvAngle(e) {
+  const r  = CP.getBoundingClientRect();
+  const pt = e.touches ? e.touches[0] : e;
+  const x  = (pt.clientX - r.left)  * (CP.width  / r.width)  - CP.width/2;
+  const y  = -((pt.clientY - r.top) * (CP.height / r.height) - CP.height/2);
+  return Math.atan2(y, x);
+}
+function pDragStart(e) { e.preventDefault(); PS.vizDrag = true; pDragMove(e); }
+function pDragMove(e)  { if (!PS.vizDrag) return; e.preventDefault(); PS.vizAngle = pEvAngle(e); drawPropViz(); }
+function pDragEnd()    { PS.vizDrag = false; }
+CP.addEventListener('mousedown',  pDragStart);
+CP.addEventListener('mousemove',  pDragMove);
+CP.addEventListener('mouseup',    pDragEnd);
+CP.addEventListener('mouseleave', pDragEnd);
+CP.addEventListener('touchstart', pDragStart, { passive: false });
+CP.addEventListener('touchmove',  pDragMove,  { passive: false });
+CP.addEventListener('touchend',   pDragEnd);
+
+/* ── setPropViz ── */
+function setPropViz(m) {
+  PS.vizMode = m;
+  ['tri','dest','all','none'].forEach(k => {
+    document.getElementById('pv-' + k).classList.toggle('on', k === m);
+  });
+  drawPropViz();
+}
+
+function nextProp() {
+  const idx = Math.floor(Math.random() * PQ.length);
+  PS.current  = PQ[idx];
+  PS.answered = false;
+
+  document.getElementById('propsCat').textContent = PS.current.cat;
+  document.getElementById('propsQ').textContent   = PS.current.q;
+  document.getElementById('propsHint').className  = 'props-hint';
+  document.getElementById('propsHint').innerHTML  = '';
+  renderPropChoices();
+  drawPropViz();
+}
+
+function renderPropChoices() {
+  const { ans, wrong } = PS.current;
+  const all = [ans, ...wrong].sort(() => Math.random() - 0.5);
+  const grid = document.getElementById('propsChoices');
+  grid.innerHTML = '';
+  all.forEach(text => {
+    const btn = document.createElement('button');
+    btn.className   = 'choice-btn';
+    btn.textContent = text;
+    btn.onclick     = () => handlePropChoice(btn, text);
+    grid.appendChild(btn);
+  });
+}
+
+function handlePropChoice(btn, selected) {
+  if (PS.answered) return;
+  PS.answered = true;
+  PS.score.total++;
+
+  const isOk = selected === PS.current.ans;
+  if (isOk) PS.score.ok++;
+
+  // Style all buttons
+  document.querySelectorAll('#propsChoices .choice-btn').forEach(b => {
+    if (b.textContent === PS.current.ans) {
+      b.classList.add('ok');
+    } else if (b === btn && !isOk) {
+      b.classList.add('ng');
+    } else {
+      b.classList.add('dim');
+    }
+    b.disabled = true;
+  });
+
+  // Show hint
+  const hint = document.getElementById('propsHint');
+  hint.innerHTML = `<strong>公式：</strong> ${PS.current.q.replace('?', PS.current.ans)}<br>${PS.current.hint}`;
+  hint.className = 'props-hint show';
+
+  document.getElementById('propsScore').textContent =
+    `${PS.score.ok} / ${PS.score.total}`;
+
+  showToast(isOk, isOk ? '正解！' : `不正解。正解：${PS.current.ans}`);
+  setTimeout(() => { hideToast(); nextProp(); }, 2200);
+}
+
+/* ============================================================
+   MODE SWITCH (updated)
+   ============================================================ */
+function setMode(m) {
+  S.mode = m;
+  document.getElementById('pageExplore').classList.toggle('on',  m === 'explore');
+  document.getElementById('pageMemorize').classList.toggle('on', m === 'memorize');
+  document.getElementById('pageProps').classList.toggle('on',    m === 'props');
+  document.getElementById('btnExplore').classList.toggle('on',   m === 'explore');
+  document.getElementById('btnMemorize').classList.toggle('on',  m === 'memorize');
+  document.getElementById('btnProps').classList.toggle('on',     m === 'props');
+  if (m === 'memorize') nextQuestion();
+  if (m === 'props')    nextProp();
+  setTimeout(resize, 40);
+}
+
+function setUnit(u) {
+  S.unit = u;
+  document.getElementById('btnRad').classList.toggle('on', u === 'rad');
+  document.getElementById('btnDeg').classList.toggle('on', u === 'deg');
+  drawAll();
+}
+
+function setGraph(g) {
+  S.graph = g;
+  document.getElementById('gSin').className = 'gtab' + (g === 'sin' ? ' sin-on' : '');
+  document.getElementById('gCos').className = 'gtab' + (g === 'cos' ? ' cos-on' : '');
+  drawAll();
+}
+
+document.getElementById('snapCk').addEventListener('change', e => {
+  S.snap = e.target.checked;
+});
+
+/* ============================================================
+   DRAG INTERACTION (EXPLORE)
+   ============================================================ */
+function evAngle(canvas, e) {
+  const r = canvas.getBoundingClientRect();
+  const pt = e.touches ? e.touches[0] : e;
+  const x = (pt.clientX - r.left)  * (canvas.width  / r.width)  - canvas.width/2;
+  const y = -((pt.clientY - r.top) * (canvas.height / r.height) - canvas.height/2);
+  return Math.atan2(y, x);
+}
+
+function onDragStart(e) {
+  e.preventDefault();
+  S.drag = true;
+  onDragMove(e);
+}
+function onDragMove(e) {
+  if (!S.drag) return;
+  e.preventDefault();
+  let a = evAngle(CC, e);
+  if (S.snap) a = snapAngle(a);
+  S.angle = a;
+  drawAll();
+}
+function onDragEnd() { S.drag = false; }
+
+CC.addEventListener('mousedown',  onDragStart);
+CC.addEventListener('mousemove',  onDragMove);
+CC.addEventListener('mouseup',    onDragEnd);
+CC.addEventListener('mouseleave', onDragEnd);
+CC.addEventListener('touchstart', onDragStart, { passive: false });
+CC.addEventListener('touchmove',  onDragMove,  { passive: false });
+CC.addEventListener('touchend',   onDragEnd);
+
+/* ============================================================
+   MEMORIZE MODE
+   ============================================================ */
+function nextQuestion() {
+  const idx = Math.floor(Math.random() * SA.length);
+  const correct = SA[idx];
+  const pool = SA.filter((_, i) => i !== idx).sort(() => Math.random()-0.5).slice(0, 3);
+  const choices = [...pool, correct].sort(() => Math.random()-0.5);
+
+  S.quiz.correct  = correct;
+  S.quiz.choices  = choices;
+  S.quiz.answered = false;
+
+  document.getElementById('qText').textContent = `θ = ${correct.lbl} の三角形は？`;
+  drawMemo();
+}
+
+const CHOICE_COLORS = ['#e74c3c','#3498db','#27ae60','#f39c12'];
+const CHOICE_LABELS = ['A','B','C','D'];
+
+function drawMemo() {
+  const ctx = ctxM, canvas = CM;
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+  const R  = Math.min(W,H) * 0.34;
+  const fs = Math.max(10, R * 0.12);
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+
+  // Axes
+  ctx.strokeStyle = '#ccc'; ctx.lineWidth = 1.5;
+  line(ctx, cx-R-18, cy, cx+R+18, cy);
+  line(ctx, cx, cy-R-18, cx, cy+R+18);
+
+  // Circle
+  ctx.strokeStyle = '#2c3e50'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, PI2); ctx.stroke();
+
+  const { choices, correct, answered } = S.quiz;
+
+  choices.forEach((ch, i) => {
+    const a  = ch.r;
+    const cv = Math.cos(a), sv = Math.sin(a);
+    const px = cx + R*cv, py = cy - R*sv;
+    const fx = cx + R*cv;
+    const col = CHOICE_COLORS[i];
+    const isOk = ch.r === correct.r;
+    const alpha = answered ? (isOk ? 1 : 0.25) : 0.9;
+
+    ctx.globalAlpha = alpha;
+
+    // Triangle fill
+    ctx.fillStyle = col;
+    ctx.globalAlpha = answered ? (isOk ? 0.15 : 0.05) : 0.1;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy); ctx.lineTo(fx, cy); ctx.lineTo(px, py);
+    ctx.closePath(); ctx.fill();
+
+    ctx.globalAlpha = answered ? (isOk ? 1 : 0.25) : 0.9;
+
+    // Legs
+    ctx.strokeStyle = col; ctx.lineWidth = 2;
+    line(ctx, cx, cy, px, py);
+    line(ctx, cx, cy, fx, cy);
+    line(ctx, fx, cy, px, py);
+
+    // Dot with label
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(px, py, 12, 0, PI2); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = `bold ${Math.floor(fs*1.1)}px sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(CHOICE_LABELS[i], px, py);
+
+    // Correct answer: show angle label after answering
+    if (answered && isOk) {
+      ctx.fillStyle = '#27ae60';
+      ctx.font = `bold ${Math.floor(fs)}px Georgia, serif`;
+      const lr = R + 20;
+      ctx.fillText(ch.lbl, cx + lr*Math.cos(a), cy - lr*Math.sin(a));
+    }
+
+    ctx.globalAlpha = 1;
+  });
+
+  // Score
+  const { ok, total } = S.quiz.score;
+  document.getElementById('scoreText').textContent = `${ok} / ${total}`;
+}
+
+function handleMemoTap(e) {
+  e.preventDefault();
+  if (S.quiz.answered) return;
+
+  const r   = CM.getBoundingClientRect();
+  const pt  = e.changedTouches ? e.changedTouches[0] : e;
+  const x   = (pt.clientX - r.left)  * (CM.width  / r.width);
+  const y   = (pt.clientY - r.top)   * (CM.height / r.height);
+  const cx  = CM.width/2, cy = CM.height/2;
+  const R   = Math.min(CM.width, CM.height) * 0.34;
+
+  let hit = null;
+  for (const ch of S.quiz.choices) {
+    const px = cx + R*Math.cos(ch.r);
+    const py = cy - R*Math.sin(ch.r);
+    if (Math.hypot(x-px, y-py) < 22) { hit = ch; break; }
+  }
+  if (!hit) return;
+
+  S.quiz.answered = true;
+  S.quiz.score.total++;
+  const isOk = hit.r === S.quiz.correct.r;
+  if (isOk) S.quiz.score.ok++;
+
+  drawMemo();
+  showToast(isOk, isOk ? `正解！ θ = ${S.quiz.correct.lbl}` : `不正解。正解は ${S.quiz.correct.lbl}`);
+  setTimeout(() => { hideToast(); nextQuestion(); }, 1900);
+}
+
+CM.addEventListener('click',     handleMemoTap);
+CM.addEventListener('touchend',  handleMemoTap, { passive: false });
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+let toastTimer = null;
+function showToast(ok, msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show ' + (ok ? 'ok' : 'ng');
+  clearTimeout(toastTimer);
+}
+function hideToast() {
+  document.getElementById('toast').classList.remove('show');
+}
+
+/* ============================================================
+   HELPERS
+   ============================================================ */
+function line(ctx, x1,y1,x2,y2) {
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+}
+
+function arrow(ctx, x, y, col, angle) {
+  ctx.save();
+  ctx.fillStyle = col;
+  ctx.translate(x, y); ctx.rotate(angle);
+  ctx.beginPath();
+  ctx.moveTo(0,0); ctx.lineTo(-8,-4); ctx.lineTo(-8,4);
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+window.addEventListener('resize', resize);
+resize();
+</script>
+</body>
+</html>
