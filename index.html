@@ -341,16 +341,40 @@ canvas { display: block; border-radius: 10px; touch-action: none; }
 }
 .neg-btn:hover { background: var(--bg); border-color: var(--cos); color: var(--cos); }
 .neg-btn.active { background: #eef6fd; border-color: var(--cos); color: var(--cos); }
+
+/* ── Header ON/OFF pills ── */
+.header { flex-wrap: wrap; }
+.pill-on {
+  padding: 5px 10px;
+  border: 1.5px solid var(--tan);
+  border-radius: 6px;
+  background: #f0fdf4;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1a7a40;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.pill-on.off {
+  border-color: var(--border);
+  background: white;
+  color: var(--muted);
+}
 </style>
 </head>
 <body>
 
 <header class="header">
   <h1>三角関数 単位円</h1>
-  <div class="seg">
-    <button class="seg-btn on" id="btnExplore"  onclick="setMode('explore')">探索</button>
-    <button class="seg-btn"    id="btnMemorize" onclick="setMode('memorize')">暗記</button>
-    <button class="seg-btn"    id="btnProps"    onclick="setMode('props')">性質</button>
+  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+    <div class="seg">
+      <button class="seg-btn on" id="btnExplore"  onclick="setMode('explore')">探索</button>
+      <button class="seg-btn"    id="btnMemorize" onclick="setMode('memorize')">暗記</button>
+      <button class="seg-btn"    id="btnProps"    onclick="setMode('props')">性質</button>
+    </div>
+    <button class="pill-on" id="btnTimer"    onclick="toggleSetting('timer')">⏱ ON</button>
+    <button class="pill-on off" id="btnQuestion" onclick="toggleSetting('question')">問題 OFF</button>
   </div>
   <div class="seg">
     <button class="seg-btn on" id="btnRad" onclick="setUnit('rad')">rad</button>
@@ -439,7 +463,7 @@ canvas { display: block; border-radius: 10px; touch-action: none; }
       <span class="score" id="propsScore">0 / 0</span>
       <div style="display:flex;align-items:center;gap:10px;">
         <div class="props-timer" id="propsTimer"></div>
-        <button class="skip-btn" onclick="nextProp()">スキップ →</button>
+        <button class="skip-btn" onclick="this._cb ? (hideToast(), this._cb()) : nextProp()">スキップ →</button>
       </div>
     </div>
   </div>
@@ -885,6 +909,24 @@ const PQ = [
 const PS = { score: { ok: 0, total: 0 }, current: null, answered: false,
              vizAngle: Math.PI/3, vizMode: 'all', vizDrag: false };
 
+/* グローバル設定 */
+const SETTINGS = { timer: true, question: false };  // 問題はデフォルトOFF(非表示)
+
+function toggleSetting(key) {
+  SETTINGS[key] = !SETTINGS[key];
+  const el = document.getElementById(key === 'timer' ? 'btnTimer' : 'btnQuestion');
+  const on = SETTINGS[key];
+  el.classList.toggle('off', !on);
+  el.textContent = (key === 'timer' ? '⏱ ' : '問題 ') + (on ? 'ON' : 'OFF');
+  if (key === 'question') applyQuestionVisibility();
+}
+
+function applyQuestionVisibility() {
+  const el = document.getElementById('propsQ');
+  if (!el) return;
+  el.style.visibility = SETTINGS.question ? 'visible' : 'hidden';
+}
+
 const CP   = document.getElementById('cProps');
 const ctxP = CP.getContext('2d');
 
@@ -1080,6 +1122,10 @@ function setPropViz(m) {
 
 function nextProp() {
   stopCountdown();
+  // スキップボタンをリセット
+  const skip = document.querySelector('#pageProps .skip-btn');
+  if (skip) { skip.textContent = 'スキップ →'; skip._cb = null; }
+
   const idx = Math.floor(Math.random() * PQ.length);
   PS.current  = PQ[idx];
   PS.answered = false;
@@ -1088,6 +1134,7 @@ function nextProp() {
   document.getElementById('propsQ').textContent   = PS.current.q;
   document.getElementById('propsHint').className  = 'props-hint';
   document.getElementById('propsHint').innerHTML  = '';
+  applyQuestionVisibility();
   renderPropChoices();
   drawPropViz();
 }
@@ -1134,6 +1181,9 @@ function handlePropChoice(btn, selected) {
   document.getElementById('propsScore').textContent =
     `${PS.score.ok} / ${PS.score.total}`;
 
+  // 問題OFFでも解答後は問題文を表示
+  document.getElementById('propsQ').style.visibility = 'visible';
+
   showToast(isOk, isOk ? '正解！' : `不正解。正解：${PS.current.ans}`);
   startCountdown(() => { hideToast(); nextProp(); });
 }
@@ -1141,6 +1191,12 @@ function handlePropChoice(btn, selected) {
 /* ── 3-second countdown ── */
 let _cdTimer = null;
 function startCountdown(cb) {
+  if (!SETTINGS.timer) {
+    // タイマーOFF: スキップボタンを「次へ」に変えて待機
+    const skip = document.querySelector('#pageProps .skip-btn');
+    if (skip) { skip.textContent = '次の問題 →'; skip._cb = cb; }
+    return;
+  }
   let n = 3;
   const el = document.getElementById('propsTimer');
   el.textContent = n;
