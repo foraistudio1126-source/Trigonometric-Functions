@@ -312,6 +312,35 @@ canvas { display: block; border-radius: 10px; touch-action: none; }
 }
 .props-hint.show { display: block; }
 .props-hint strong { color: var(--text); }
+
+/* ── Props timer & -θ button ── */
+.props-timer {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  border: 3px solid var(--border);
+  display: none;
+  align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700;
+  color: var(--muted);
+  transition: border-color 0.3s, color 0.3s;
+  flex-shrink: 0;
+}
+.props-timer.active { display: flex; border-color: var(--cos); color: var(--cos); }
+
+.neg-btn {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border);
+  background: white;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  font-family: Georgia, serif;
+  transition: all 0.15s;
+}
+.neg-btn:hover { background: var(--bg); border-color: var(--cos); color: var(--cos); }
+.neg-btn.active { background: #eef6fd; border-color: var(--cos); color: var(--cos); }
 </style>
 </head>
 <body>
@@ -401,11 +430,17 @@ canvas { display: block; border-radius: 10px; touch-action: none; }
       <div class="props-q-text" id="propsQ">sin(−θ) = ?</div>
     </div>
     <canvas id="cProps" style="touch-action:none;border-radius:10px;"></canvas>
+    <div style="display:flex;justify-content:flex-end;width:100%;max-width:520px;">
+      <button class="neg-btn" id="negThetaBtn" onclick="toggleNegTheta()">−θ に切替</button>
+    </div>
     <div class="choices-grid" id="propsChoices"></div>
     <div class="props-hint" id="propsHint"></div>
     <div class="memo-meta" style="max-width:520px;">
       <span class="score" id="propsScore">0 / 0</span>
-      <button class="skip-btn" onclick="nextProp()">スキップ →</button>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="props-timer" id="propsTimer"></div>
+        <button class="skip-btn" onclick="nextProp()">スキップ →</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1044,6 +1079,7 @@ function setPropViz(m) {
 }
 
 function nextProp() {
+  stopCountdown();
   const idx = Math.floor(Math.random() * PQ.length);
   PS.current  = PQ[idx];
   PS.answered = false;
@@ -1099,7 +1135,35 @@ function handlePropChoice(btn, selected) {
     `${PS.score.ok} / ${PS.score.total}`;
 
   showToast(isOk, isOk ? '正解！' : `不正解。正解：${PS.current.ans}`);
-  setTimeout(() => { hideToast(); nextProp(); }, 2200);
+  startCountdown(() => { hideToast(); nextProp(); });
+}
+
+/* ── 3-second countdown ── */
+let _cdTimer = null;
+function startCountdown(cb) {
+  let n = 3;
+  const el = document.getElementById('propsTimer');
+  el.textContent = n;
+  el.classList.add('active');
+  _cdTimer = setInterval(() => {
+    n--;
+    if (n > 0) { el.textContent = n; }
+    else { stopCountdown(); cb(); }
+  }, 1000);
+}
+function stopCountdown() {
+  clearInterval(_cdTimer); _cdTimer = null;
+  const el = document.getElementById('propsTimer');
+  el.textContent = '';
+  el.classList.remove('active');
+}
+
+/* ── −θ toggle ── */
+function toggleNegTheta() {
+  PS.vizAngle = -PS.vizAngle;
+  const btn = document.getElementById('negThetaBtn');
+  btn.classList.toggle('active', PS.vizAngle < 0);
+  drawPropViz();
 }
 
 /* ============================================================
